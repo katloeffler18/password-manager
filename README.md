@@ -36,7 +36,7 @@ This project is a secure, web-based password manager designed to help users stor
 
 ## Project Structure
 
-
+```text
 password-manager/
 ├── frontend/        # React application
 ├── backend/         # Flask API
