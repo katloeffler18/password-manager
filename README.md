@@ -38,14 +38,14 @@ This project is a secure, web-based password manager designed to help users stor
 
 ```text
 password-manager/
-├── frontend/        # React application
-├── backend/         # Flask API
-├── docs/            # Documentation and reports
-├── diagrams/        # Architecture diagrams
-├── .env.example     # Example environment variables
+├── frontend/       
+├── backend/         
+├── docs/            
+├── diagrams/        
+├── .env.example     
 ├── .gitignore
 └── README.md
-
+```
 
 ---
 
