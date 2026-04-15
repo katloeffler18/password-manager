@@ -1,0 +1,57 @@
+# =========================
+# General
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Node / React
+# =========================
+node_modules/
+build/
+dist/
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# =========================
+# Python / Flask
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.sqlite3
+instance/
+.env
+venv/
+.env/
+*.log
+
+# =========================
+# Virtual Environments
+# =========================
+venv/
+env/
+ENV/
+
+# =========================
+# IDE / Editor
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Misc
+# =========================
+coverage/
