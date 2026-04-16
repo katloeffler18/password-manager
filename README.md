@@ -53,38 +53,39 @@ password-manager/
 
 ### 1. Clone the repository
 
+```
 git clone <repo-url>
 cd password-manager
-
+```
 
 ---
 
 ### 2. Backend Setup (Flask)
 
-
+```
 cd backend
 python -m venv venv
 source venv/bin/activate # Mac/Linux
 venv\Scripts\activate # Windows
 
 pip install -r requirements.txt
-
+```
 
 Create a `.env` file based on `.env.example`, then run:
 
-
+```
 flask run
-
+```
 
 ---
 
 ### 3. Frontend Setup (React)
 
-
+```
 cd frontend
 npm install
 npm start
-
+```
 
 ---
 
