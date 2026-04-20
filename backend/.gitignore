@@ -1,0 +1,11 @@
+# Environments
+venv/
+.env
+
+# Database
+instance/
+*.db
+
+# Python cache
+__pycache__/
+*.pyc

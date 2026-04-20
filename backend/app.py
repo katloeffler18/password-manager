@@ -1,49 +1,45 @@
-from flask import Flask, jsonify, redirect
+from flask import Flask
 from flask_cors import CORS
-from flask_login import LoginManager, login_required, login_user, logout_user
-from user import User
+from flask_jwt_extended import JWTManager
+from dotenv import load_dotenv
+import os
 
-app = Flask(__name__)
-CORS(app)
-app.secret_key = b'This is the secret key'
+# 1. Load DB utilities and models first
+from utils.db import db, init_db
+from models.user import User
+from models.vault import Vault
 
-# Setup flask_login
-login_manager = LoginManager(app)
-login_manager.init_app(app)
-login_manager.login_view = "login"
+def create_app():
+    load_dotenv()
+    
+    app = Flask(__name__)
+    CORS(app)
 
-# Loads the current user from the client's cookies
-@login_manager.user_loader
-def load_user(user_id):
-    # Get user properties from the db and update the User object
-    # return User.get(user_id)
-    pass
+    # 2. Configuration
+    # Use an absolute path for the instance folder to avoid "Folder Not Found" errors
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "instance", "database.db")}'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'dev-secret')
 
-@app.route("/")
-def home():
-    return "This is MY Flask server"
+    # 3. Initialize Extensions
+    jwt = JWTManager(app)
+    init_db(app)
 
-@app.route("/dashboard")
-@login_required
-def dashboard():
-    return "This is the dashboard"
+    # 4. Register Blueprints INSIDE the function to prevent circular imports
+    from routes.auth import auth_bp
+    from routes.vault import vault_bp
+    
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(vault_bp, url_prefix='/api')
 
-@app.route("/login")
-def login():
-    # Need a form to get username and password from client
-    # login_user(user_object)
-    return "This is the login page"
+    return app
 
-@app.route("/logout")
-@login_required
-def logout():
-    logout_user()
-    return redirect('/')
+app = create_app()
 
-@app.route("/api/test")
-def test():
-    return jsonify({"message": "Hello from Flask!"})
-
-if __name__ == "__main__":
-    print("Starting Flask app on port 5050...")
-    app.run(debug=True, port=5050)
+if __name__ == '__main__':
+    # Ensure the instance folder exists
+    if not os.path.exists('instance'):
+        os.makedirs('instance')
+    
+    app.run(host='127.0.0.1', port=5001, debug=True)
