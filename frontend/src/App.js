@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 
+const apiKey = process.env.REACT_APP_API_BASE_URL;
+
 function App() {
   const [message, setMessage] = useState("Loading...");
 
   useEffect(() => {
-    fetch("http://localhost:5050/api/test")
+    fetch(apiKey)
       .then((res) => res.json())
       .then((data) => {
         console.log("Backend response:", data);

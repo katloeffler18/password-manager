@@ -21,7 +21,7 @@ def load_user(user_id):
 
 @app.route("/")
 def home():
-    return "This is MY Flask server"
+    return jsonify({"message": "This is MY Flask server"}) #frontend is expecting a JSON object for now
 
 @app.route("/dashboard")
 @login_required
