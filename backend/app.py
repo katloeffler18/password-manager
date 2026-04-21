@@ -4,7 +4,7 @@ from flask_jwt_extended import JWTManager
 from dotenv import load_dotenv
 import os
 
-# 1. Load DB utilities and models first
+# Load DB utilities and models
 from utils.db import db, init_db
 from models.user import User
 from models.vault import Vault
@@ -15,18 +15,18 @@ def create_app():
     app = Flask(__name__)
     CORS(app)
 
-    # 2. Configuration
-    # Use an absolute path for the instance folder to avoid "Folder Not Found" errors
+    # Configuration
+    # Use an absolute path for the instance folder to avoid Folder Not Found errors
     basedir = os.path.abspath(os.path.dirname(__file__))
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "instance", "database.db")}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'dev-secret')
 
-    # 3. Initialize Extensions
+    # Initialize extensions
     jwt = JWTManager(app)
     init_db(app)
 
-    # 4. Register Blueprints INSIDE the function to prevent circular imports
+    # Register blueprints inside the function to prevent import problems
     from routes.auth import auth_bp
     from routes.vault import vault_bp
     
@@ -38,7 +38,7 @@ def create_app():
 app = create_app()
 
 if __name__ == '__main__':
-    # Ensure the instance folder exists
+    # Make sure that the instance folder exists
     if not os.path.exists('instance'):
         os.makedirs('instance')
     
