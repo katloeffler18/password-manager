@@ -31,3 +31,10 @@ def login():
         token = create_access_token(identity=str(user.id))
         return jsonify({'token': token}), 200
     return jsonify({'error': 'Invalid credentials'}), 401
+
+@auth_bp.route('/', methods=['GET'])
+def health_check():
+    return jsonify({
+        "status": "online",
+        "message": "Backend is communicating with Frontend!"
+    }), 200
