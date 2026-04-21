@@ -21,7 +21,7 @@ def load_user(user_id):
 
 @app.route("/")
 def home():
-    return "This is MY Flask server"
+    return jsonify({"message": "This is MY Flask server"})
 
 @app.route("/dashboard")
 @login_required
@@ -39,10 +39,6 @@ def login():
 def logout():
     logout_user()
     return redirect('/')
-
-@app.route("/api/test")
-def test():
-    return jsonify({"message": "Hello from Flask!"})
 
 if __name__ == "__main__":
     print("Starting Flask app on port 5050...")
