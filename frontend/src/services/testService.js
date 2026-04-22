@@ -6,5 +6,5 @@
 import { apiFetch } from "./api";
 
 export async function getTestMessage() {
-  return apiFetch("/");
+  return apiFetch("/api/auth/");
 }
