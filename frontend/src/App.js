@@ -4,8 +4,9 @@ import AppNavbar from "./components/AppNavbar";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
-import { useAuth } from "./context/AuthContext";
+import DashboardPage from "./pages/DashboardPage";
 import LandingPage from "./pages/LandingPage";
+import { useAuth } from "./context/AuthContext";
 
 const App = () => {
   const { isAuthenticated } = useAuth();
@@ -16,6 +17,7 @@ const App = () => {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/vault" element={isAuthenticated ? <DashboardPage /> : <Navigate to="/login" />} />
       </Routes>
     </Router>
   )
