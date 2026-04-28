@@ -17,9 +17,14 @@ export function AuthProvider({ children }) {
     setIsAuthenticated(true);
   }
 
-  const login = (userData) => {
-    setUser(userData);
-    setIsAuthenticated(true);
+  const login = (email, password) => {
+    // test dummy example account for development purposes
+    if (email === "test@example.com" && password === "password") {
+      setIsAuthenticated(true)
+      setUser({ email })
+    } else {
+      alert("Invalid email or password")
+    }
   };
 
   const logout = () => {
