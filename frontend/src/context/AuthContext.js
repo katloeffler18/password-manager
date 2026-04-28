@@ -11,6 +11,12 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  const register = (email, password) => {
+    // TODO: API call to register a user into the backend
+    
+    setIsAuthenticated(true);
+  }
+
   const login = (userData) => {
     setUser(userData);
     setIsAuthenticated(true);
