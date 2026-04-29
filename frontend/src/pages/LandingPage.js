@@ -1,3 +1,5 @@
+// This file uses AI assistance (Copilot) to implement Bootstrap for styling.
+
 import React from "react";
 import { Link } from "react-router-dom";
 

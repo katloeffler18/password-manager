@@ -1,3 +1,5 @@
+// This file uses AI assistance (Copilot) to implement Bootstrap for styling.
+
 import { Link } from "react-router-dom";
 import { Navbar, Nav, Container } from "react-bootstrap";
 
