@@ -1,6 +1,6 @@
 // This file uses AI assistance (Copilot) to implement Bootstrap for styling.
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
@@ -8,15 +8,20 @@ const DashboardPage = () => {
 	const { isAuthenticated, user, logout } = useAuth();
 	const navigate = useNavigate();
 
-	if (!isAuthenticated) {
-		navigate("/login");
-		return null;
-	}
+    useEffect(() => {
+        if (!isAuthenticated) {
+            navigate("/login");
+        }
+    }, [isAuthenticated, navigate]);
 
-	const handleLogout = () => {
-		logout();
-		navigate("/login");
-	};
+    const handleLogout = () => {
+        logout();
+        navigate("/login");
+    };
+
+    if (!isAuthenticated) {
+        return null;
+    }
 
 	return (
 		<div className="container mt-5">

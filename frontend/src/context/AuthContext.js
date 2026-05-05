@@ -7,12 +7,19 @@ import { createContext, useContext, useState } from "react";
 
 const AuthContext = createContext();
 
+function getLocalStorage(key, fallback) {
+	try {
+		const value = localStorage.getItem(key);
+		return value ? JSON.parse(value) : fallback;
+	} catch {
+		return fallback;
+	}
+}
+
 export function AuthProvider({ children }) {
-	const [user, setUser] = useState(
-		() => JSON.parse(localStorage.getItem("user")) || null,
-	);
-	const [isAuthenticated, setIsAuthenticated] = useState(
-		() => JSON.parse(localStorage.getItem("isAuthenticated")) || false,
+	const [user, setUser] = useState(() => getLocalStorage("user", null));
+	const [isAuthenticated, setIsAuthenticated] = useState(() =>
+		getLocalStorage("isAuthenticated", false),
 	);
 
 	const register = (email, password) => {
@@ -25,16 +32,21 @@ export function AuthProvider({ children }) {
 		if (email === "test@example.com" && password === "password") {
 			setIsAuthenticated(true);
 			setUser({ email });
-      localStorage.setItem("isAuthenticated", true);
-      localStorage.setItem("user", JSON.stringify({ email }));
-		} else {
-			alert("Invalid email or password");
+			localStorage.setItem("isAuthenticated", true);
+			localStorage.setItem("user", JSON.stringify({ email }));
+
+			return true;
 		}
+
+        alert("Invalid email or password");
+        return false;
 	};
 
 	const logout = () => {
 		setUser(null);
 		setIsAuthenticated(false);
+		localStorage.removeItem("isAuthenticated");
+        localStorage.removeItem("user");
 	};
 
 	return (

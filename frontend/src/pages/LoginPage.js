@@ -1,6 +1,6 @@
 // This file uses AI assistance (Copilot) to implement Bootstrap for styling.
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
@@ -10,22 +10,18 @@ const LoginPage = () => {
 	const { login, isAuthenticated } = useAuth();
 	const navigate = useNavigate();
 
-	const handleSubmit = (e) => {
-		e.preventDefault();
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate("/vault");
+        }
+    }, [isAuthenticated, navigate]);
 
-		// login function from AuthContext, redirect to vault afterwards
-		login(email, password);
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        login(email, password);
+    };
 
-		if (isAuthenticated) {
-			navigate("/vault");
-		}
-	};
-
-	if (isAuthenticated) {
-		navigate("/vault");
-	}
-
-	return (
+return (
 		<div className="d-flex justify-content-center align-items-center vh-100 bg-light">
 			<div className="card p-4 shadow" style={{ width: "400px" }}>
 				<h1 className="text-center mb-4">Login</h1>
