@@ -4,10 +4,11 @@
  */
 
 import { createContext, useContext, useState } from "react";
+import { apiFetch } from "../services/api";
 
 const AuthContext = createContext();
 
-function getLocalStorage(key, fallback) {
+function getLocalJSON(key, fallback) {
 	try {
 		const value = localStorage.getItem(key);
 		return value ? JSON.parse(value) : fallback;
@@ -17,40 +18,74 @@ function getLocalStorage(key, fallback) {
 }
 
 export function AuthProvider({ children }) {
-	const [user, setUser] = useState(() => getLocalStorage("user", null));
-	const [isAuthenticated, setIsAuthenticated] = useState(() =>
-		getLocalStorage("isAuthenticated", false),
+	const [user, setUser] = useState(() => getLocalJSON("user", null));
+	const [token, setToken] = useState(
+		() => localStorage.getItem("token") || null,
+	);
+	const [isAuthenticated, setIsAuthenticated] = useState(
+		() => !!localStorage.getItem("token"),
 	);
 
-	const register = (email, password) => {
-		// TODO: API call to register a user into the backend
-		setIsAuthenticated(true);
+	const register = async (email, password) => {
+		try {
+			await apiFetch("/api/auth/register", {
+				method: "POST",
+				body: JSON.stringify({ email, password }),
+			});
+			return true;
+		} catch (err) {
+			console.error("register failed", err);
+			return false;
+		}
 	};
 
-	const login = (email, password) => {
-		// test dummy example account for development purposes
+	const login = async (email, password) => {
+		// dev fallback for local testing
 		if (email === "test@example.com" && password === "password") {
+			const devToken = "dev-token";
+			const nextUser = { email };
+			setUser(nextUser);
+			setToken(devToken);
 			setIsAuthenticated(true);
-			setUser({ email });
-			localStorage.setItem("isAuthenticated", true);
-			localStorage.setItem("user", JSON.stringify({ email }));
-
+			localStorage.setItem("user", JSON.stringify(nextUser));
+			localStorage.setItem("token", devToken);
 			return true;
 		}
 
-        alert("Invalid email or password");
-        return false;
+		try {
+			const res = await apiFetch("/api/auth/login", {
+				method: "POST",
+				body: JSON.stringify({ email, password }),
+			});
+
+			if (res?.token) {
+				const nextUser = { email };
+				setUser(nextUser);
+				setToken(res.token);
+				setIsAuthenticated(true);
+				localStorage.setItem("user", JSON.stringify(nextUser));
+				localStorage.setItem("token", res.token);
+				return true;
+			}
+		} catch (err) {
+			console.error("login failed", err);
+		}
+
+		return false;
 	};
 
 	const logout = () => {
 		setUser(null);
+		setToken(null);
 		setIsAuthenticated(false);
-		localStorage.removeItem("isAuthenticated");
-        localStorage.removeItem("user");
+		localStorage.removeItem("user");
+		localStorage.removeItem("token");
 	};
 
 	return (
-		<AuthContext.Provider value={{ user, isAuthenticated, login, logout }}>
+		<AuthContext.Provider
+			value={{ user, token, isAuthenticated, login, logout, register }}
+		>
 			{children}
 		</AuthContext.Provider>
 	);

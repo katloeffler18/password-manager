@@ -10,18 +10,21 @@ const LoginPage = () => {
 	const { login, isAuthenticated } = useAuth();
 	const navigate = useNavigate();
 
-    useEffect(() => {
-        if (isAuthenticated) {
-            navigate("/vault");
-        }
-    }, [isAuthenticated, navigate]);
+	useEffect(() => {
+		if (isAuthenticated) {
+			navigate("/vault");
+		}
+	}, [isAuthenticated, navigate]);
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        login(email, password);
-    };
+	const handleSubmit = async (e) => {
+		e.preventDefault();
+		const ok = await login(email, password);
+		if (!ok) {
+			alert("Invalid email or password");
+		}
+	};
 
-return (
+	return (
 		<div className="d-flex justify-content-center align-items-center vh-100 bg-light">
 			<div className="card p-4 shadow" style={{ width: "400px" }}>
 				<h1 className="text-center mb-4">Login</h1>
