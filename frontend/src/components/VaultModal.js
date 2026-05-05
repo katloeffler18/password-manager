@@ -1,3 +1,7 @@
+// AI-assisted implementation:
+// Copilot was used to help draft and structure modal/form logic + Bootstrap styling.
+// Final behavior, naming, and validation were reviewed and adjusted by the author.
+
 import React, { useEffect, useState } from "react";
 
 const emptyForm = {
