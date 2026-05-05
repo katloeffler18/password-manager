@@ -1,74 +1,94 @@
 // This file uses AI assistance (Copilot) to implement Bootstrap for styling.
 
-import React, { useEffect } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import useVault from "../hooks/useVault";
 
 const DashboardPage = () => {
 	const { isAuthenticated, user, logout } = useAuth();
 	const navigate = useNavigate();
+	const [search, setSearch] = useState("");
 
-    useEffect(() => {
-        if (!isAuthenticated) {
-            navigate("/login");
-        }
-    }, [isAuthenticated, navigate]);
+	const { items = [], loading, error } = useVault(true);
 
-    const handleLogout = () => {
-        logout();
-        navigate("/login");
-    };
+	useEffect(() => {
+		if (!isAuthenticated) navigate("/login");
+	}, [isAuthenticated, navigate]);
 
-    if (!isAuthenticated) {
-        return null;
-    }
+	const filteredItems = useMemo(() => {
+		return (items || []).filter((item) => item.title.toLowerCase().includes(search.toLowerCase()));
+	}, [items, search]);
+
+	const handleLogout = () => {
+		logout();
+		navigate("/login");
+	};
+
+	if (!isAuthenticated) return null;
 
 	return (
-		<div className="container mt-5">
-			<div className="row">
-				<nav className="col-md-3 col-lg-2 d-md-block bg-light sidebar">
-					<div className="position-sticky">
-						<ul className="nav flex-column">
-							<li className="nav-item">
-								<a className="nav-link" href="#">
-									Password Vault
-								</a>
-							</li>
-							<li className="nav-item">
-								<a className="nav-link" href="#">
-									Add New Password
-								</a>
-							</li>
-							<li className="nav-item">
-								<a className="nav-link" href="#">
-									Settings
-								</a>
-							</li>
-							<li className="nav-item">
-								<button
-									className="btn btn-danger mt-3 w-100"
-									onClick={handleLogout}
-								>
-									Logout
-								</button>
-							</li>
-						</ul>
-					</div>
-				</nav>
-				<main className="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-					<div className="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-						<h1 className="h2">
-							Welcome, {user?.email || "User"}!
-						</h1>
-					</div>
+		<div className="min-vh-100 bg-light">
+			<div className="container py-4">
+				<div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
 					<div>
-						<h3>Your Password Vault</h3>
-						<p>
-							Here you can view and manage your saved passwords.
-						</p>
-						{/* Add password management components here */}
+						<h1 className="h3 mb-1">Vault</h1>
+						<div className="text-muted">Welcome, {user?.email || "User"}</div>
 					</div>
-				</main>
+
+					<div className="d-flex gap-2">
+						<button className="btn btn-outline-secondary" onClick={handleLogout}>
+							Logout
+						</button>
+						<button className="btn btn-primary">Add Password</button>
+					</div>
+				</div>
+
+				<div className="card shadow-sm border-0 mb-4">
+					<div className="card-body">
+						<div className="row g-3 align-items-center">
+							<div className="col-12 col-md-8">
+								<input className="form-control form-control-lg" placeholder="Search saved passwords" value={search} onChange={(e) => setSearch(e.target.value)} />
+							</div>
+							<div className="col-12 col-md-4 text-md-end">
+								<small className="text-muted">{loading ? "Loading..." : `${filteredItems.length} items`}</small>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				{error ? <div className="alert alert-danger">Error loading vault: {error.message || String(error)}</div> : null}
+
+				{filteredItems.length === 0 ? (
+					<div className="card shadow-sm border-0">
+						<div className="card-body text-center py-5">
+							<h2 className="h5">No passwords yet</h2>
+							<p className="text-muted mb-3">Add your first password to start organizing your vault.</p>
+							<button className="btn btn-primary">Add password</button>
+						</div>
+					</div>
+				) : (
+					<div className="row g-3">
+						{filteredItems.map((item) => (
+							<div key={item.id} className="col-12 col-md-6 col-lg-4">
+								<div className="card shadow-sm h-100 border-0">
+									<div className="card-body d-flex flex-column">
+										<div className="d-flex justify-content-between align-items-start mb-2">
+											<h3 className="h5 mb-0">{item.title}</h3>
+											{item.favorite ? <span className="badge text-bg-warning">Favorite</span> : null}
+										</div>
+
+										<div className="mt-auto d-flex gap-2">
+											<button className="btn btn-sm btn-outline-primary">Edit</button>
+											<button className="btn btn-sm btn-outline-secondary">Copy</button>
+											<button className="btn btn-sm btn-outline-danger ms-auto">Delete</button>
+										</div>
+									</div>
+								</div>
+							</div>
+						))}
+					</div>
+				)}
 			</div>
 		</div>
 	);
