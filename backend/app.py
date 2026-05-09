@@ -3,16 +3,57 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from dotenv import load_dotenv
 import os
+import logging
+from logging.handlers import RotatingFileHandler
 
 # Load DB utilities and models
 from utils.db import db, init_db
 from models.user import User
 from models.vault import Vault
 
+
+def setup_logging(app):
+    """
+    Configure application logging
+    Logs are written to instace/app.log
+    """
+
+    # makes sure that instance folder exists
+    os.makedirs('instance', exist_ok=True)
+
+    # creates formatter
+    formatter = logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s '
+        '[in %(pathname)s:%(lineno)d]'
+    )
+
+    # creates rotating file handler
+    file_handler = RotatingFileHandler(
+        'instance/app.log',
+        maxBytes=10240,
+        backupCount=10
+    )
+    
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(formatter)
+
+    # prevents duplicate handlers in debug mode
+    if not any(isinstance(h, RotatingFileHandler) for h in app.logger.handlers):
+        app.logger.addHandler(file_handler)
+
+    app.logger.setLevel(logging.INFO)
+
+    app.logger.info('Application startup')
+
+
 def create_app():
     load_dotenv()
     
     app = Flask(__name__)
+
+    # set up logging
+    setup_logging(app)
+
     CORS(app)
 
     # Configuration
@@ -38,8 +79,4 @@ def create_app():
 app = create_app()
 
 if __name__ == '__main__':
-    # Make sure that the instance folder exists
-    if not os.path.exists('instance'):
-        os.makedirs('instance')
-    
     app.run(host='127.0.0.1', port=5001, debug=True)
