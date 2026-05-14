@@ -22,6 +22,7 @@ export default function VaultModal({
 }) {
     const [form, setForm] = useState(emptyForm);
     const [saving, setSaving] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const [passwordOptions, setPasswordOptions] = useState({
         length: 16,
@@ -136,13 +137,30 @@ export default function VaultModal({
 
                             <div className="mt-3">
                                 <label className="form-label">Password</label>
-                                <input
-                                    type="password"
-                                    className="form-control"
-                                    value={form.password}
-                                    onChange={updateField("password")}
-                                    placeholder="Enter password"
-                                />
+
+                                <div className="input-group">
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        className="form-control"
+                                        value={form.password}
+                                        onChange={updateField("password")}
+                                        placeholder="Enter password"
+                                    />
+
+                                    <button
+                                        type="button"
+                                        className="btn btn-outline-secondary"
+                                        onClick={() => setShowPassword((prev) => !prev)}
+                                        aria-label={showPassword ? "Hide password" : "Show password"}
+                                    >
+                                        <i
+                                            className={`bi ${
+                                                showPassword ? "bi-eye-slash" : "bi-eye"
+                                            }`}
+                                        />
+                                    </button>
+                                </div>
+
                                 <button
                                     type="button"
                                     className="btn btn-outline-secondary btn-sm mt-2"
@@ -154,6 +172,7 @@ export default function VaultModal({
                                 {generatorError && (
                                     <div className="text-danger small mt-1">{generatorError}</div>
                                 )}
+
                                 <div className="card mt-3 p-3 bg-light">
                                     <div className="mb-3">
                                         <label className="form-label">
@@ -246,8 +265,8 @@ export default function VaultModal({
                                             Symbols
                                         </label>
                                     </div>
-                                </div>                                                                                                
-                            </div>                            
+                                </div>
+                            </div>
 
                             <div className="mt-3">
                                 <label className="form-label">Notes</label>
