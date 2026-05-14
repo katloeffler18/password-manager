@@ -3,6 +3,7 @@
 // Final behavior, naming, and validation were reviewed and adjusted by the author.
 
 import React, { useEffect, useState } from "react";
+import { generatePassword } from "../utils/passwordGenerator";
 
 const emptyForm = {
     title: "",
@@ -21,6 +22,16 @@ export default function VaultModal({
 }) {
     const [form, setForm] = useState(emptyForm);
     const [saving, setSaving] = useState(false);
+
+    const [passwordOptions, setPasswordOptions] = useState({
+        length: 16,
+        includeLowercase: true,
+        includeUppercase: true,
+        includeNumbers: true,
+        includeSymbols: true,
+    });
+
+    const [generatorError, setGeneratorError] = useState("");
 
     useEffect(() => {
         if (!show) return;
@@ -56,6 +67,21 @@ export default function VaultModal({
             setSaving(false);
         }
     };
+
+    function handleGeneratePassword() {
+        try {
+            const generatedPassword = generatePassword(passwordOptions);
+
+            setForm((prev) => ({
+                ...prev,
+                password: generatedPassword,
+            }));
+
+            setGeneratorError("");
+        } catch (error) {
+            setGeneratorError(error.message);
+        }
+    }
 
     return (
         <div className="modal d-block" tabIndex="-1" role="dialog" aria-modal="true">
@@ -117,7 +143,111 @@ export default function VaultModal({
                                     onChange={updateField("password")}
                                     placeholder="Enter password"
                                 />
-                            </div>
+                                <button
+                                    type="button"
+                                    className="btn btn-outline-secondary btn-sm mt-2"
+                                    onClick={handleGeneratePassword}
+                                >
+                                    Generate Password
+                                </button>
+
+                                {generatorError && (
+                                    <div className="text-danger small mt-1">{generatorError}</div>
+                                )}
+                                <div className="card mt-3 p-3 bg-light">
+                                    <div className="mb-3">
+                                        <label className="form-label">
+                                            Password Length: {passwordOptions.length}
+                                        </label>
+
+                                        <input
+                                            type="range"
+                                            min="8"
+                                            max="32"
+                                            value={passwordOptions.length}
+                                            className="form-range"
+                                            onChange={(event) =>
+                                                setPasswordOptions((prev) => ({
+                                                    ...prev,
+                                                    length: Number(event.target.value),
+                                                }))
+                                            }
+                                        />
+                                    </div>
+
+                                    <div className="form-check">
+                                        <input
+                                            type="checkbox"
+                                            className="form-check-input"
+                                            checked={passwordOptions.includeLowercase}
+                                            onChange={(event) =>
+                                                setPasswordOptions((prev) => ({
+                                                    ...prev,
+                                                    includeLowercase: event.target.checked,
+                                                }))
+                                            }
+                                            id="lowercase"
+                                        />
+                                        <label className="form-check-label" htmlFor="lowercase">
+                                            Lowercase
+                                        </label>
+                                    </div>
+
+                                    <div className="form-check">
+                                        <input
+                                            type="checkbox"
+                                            className="form-check-input"
+                                            checked={passwordOptions.includeUppercase}
+                                            onChange={(event) =>
+                                                setPasswordOptions((prev) => ({
+                                                    ...prev,
+                                                    includeUppercase: event.target.checked,
+                                                }))
+                                            }
+                                            id="uppercase"
+                                        />
+                                        <label className="form-check-label" htmlFor="uppercase">
+                                            Uppercase
+                                        </label>
+                                    </div>
+
+                                    <div className="form-check">
+                                        <input
+                                            type="checkbox"
+                                            className="form-check-input"
+                                            checked={passwordOptions.includeNumbers}
+                                            onChange={(event) =>
+                                                setPasswordOptions((prev) => ({
+                                                    ...prev,
+                                                    includeNumbers: event.target.checked,
+                                                }))
+                                            }
+                                            id="numbers"
+                                        />
+                                        <label className="form-check-label" htmlFor="numbers">
+                                            Numbers
+                                        </label>
+                                    </div>
+
+                                    <div className="form-check">
+                                        <input
+                                            type="checkbox"
+                                            className="form-check-input"
+                                            checked={passwordOptions.includeSymbols}
+                                            onChange={(event) =>
+                                                setPasswordOptions((prev) => ({
+                                                    ...prev,
+                                                    includeSymbols: event.target.checked,
+                                                }))
+                                            }
+                                            id="symbols"
+                                        />
+                                        <label className="form-check-label" htmlFor="symbols">
+                                            Symbols
+                                        </label>
+                                    </div>
+                                </div>                                                                                                
+                            </div>                            
 
                             <div className="mt-3">
                                 <label className="form-label">Notes</label>
