@@ -50,6 +50,22 @@ export function AuthProvider({ children }) {
     setIsAuthenticated(true);
   };
 
+  // const login = (email, password) => {
+  //   // Test dummy example account for development purposes.
+  //   // TODO: Replace with backend authentication.
+  //   if (email === "test@example.com" && password === "password") {
+  //     setIsAuthenticated(true);
+  //     setUser({ email });
+
+  //     // Only auth/session metadata is persisted here.
+  //     // Plaintext vault data should never be persisted.
+  //     localStorage.setItem("isAuthenticated", JSON.stringify(true));
+  //     localStorage.setItem("user", JSON.stringify({ email }));
+  //   } else {
+  //     alert("Invalid email or password");
+  //   }
+  // };
+
   const login = (email, password) => {
     // Test dummy example account for development purposes.
     // TODO: Replace with backend authentication.
@@ -61,9 +77,11 @@ export function AuthProvider({ children }) {
       // Plaintext vault data should never be persisted.
       localStorage.setItem("isAuthenticated", JSON.stringify(true));
       localStorage.setItem("user", JSON.stringify({ email }));
-    } else {
-      alert("Invalid email or password");
+
+      return true;
     }
+
+    return false;
   };
 
   const logout = () => {
