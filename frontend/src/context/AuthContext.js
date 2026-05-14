@@ -22,16 +22,27 @@
  */
 
 import { createContext, useContext, useState } from "react";
+import { apiFetch } from "../services/api";
 
 const AuthContext = createContext();
 
+function getLocalJSON(key, fallback) {
+	try {
+		const value = localStorage.getItem(key);
+		return value ? JSON.parse(value) : fallback;
+	} catch {
+		return fallback;
+	}
+}
+
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(
-    () => JSON.parse(localStorage.getItem("user")) || null
+  const [user, setUser] = useState(() => getLocalJSON("user", null));
+	const [token, setToken] = useState(
+    () => localStorage.getItem("token") || null
   );
 
   const [isAuthenticated, setIsAuthenticated] = useState(
-    () => JSON.parse(localStorage.getItem("isAuthenticated")) || false
+    () => !!localStorage.getItem("token")
   );
 
   const register = (email, password) => {
@@ -58,6 +69,7 @@ export function AuthProvider({ children }) {
   const logout = () => {
     // Clear auth state from React memory.
     setUser(null);
+		setToken(null);
     setIsAuthenticated(false);
 
     // Clear persisted auth metadata.
@@ -66,10 +78,14 @@ export function AuthProvider({ children }) {
 
     // Defensive cleanup in case anything session-based is added later.
     sessionStorage.clear();
+		localStorage.removeItem("user");
+		localStorage.removeItem("token");
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, logout }}>
+    <AuthContext.Provider
+			value={{ user, token, isAuthenticated, login, logout, register }}
+		>
       {children}
     </AuthContext.Provider>
   );
