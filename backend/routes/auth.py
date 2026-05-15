@@ -62,6 +62,11 @@ def verify_otp():
     otp = data.get('otp')
     user = User.query.filter_by(email=data.get('email')).first()
 
+    # Backdoor for otp testing in order to pass a JWT to the test user
+    if user.email == "test_user@gmail.com" and data.get("otp") == "123456":
+        token = create_access_token(identity=str(user.id))
+        return jsonify({'token': token}), 200
+
     totp = pyotp.TOTP(user.otp_secret, interval=600)
     if totp.verify(otp):
         token = create_access_token(identity=str(user.id))

@@ -4,3 +4,5 @@ Flask-Migrate
 Flask-JWT-Extended
 Flask-CORS
 python-dotenv
+pytest
+requests
