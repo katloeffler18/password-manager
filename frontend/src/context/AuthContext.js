@@ -1,24 +1,11 @@
 /*
- * Provides global authentication state and session management for the application.
- * This context is responsible for tracking the logged-in user and authentication status,
- * and exposing login/logout functionality to the rest of the app.
+ * Provides global authentication state and session management.
  *
- * Responsibilities:
- * - Manage authenticated user state (user object)
- * - Track authentication status (isAuthenticated)
- * - Handle login and logout logic
- * - Persist minimal session metadata across page refreshes using localStorage
- *
- * Integration with VaultContext:
- * - On logout, vault state should also be cleared via clearVaultState() to ensure
- *   no decrypted credential data remains in memory
- *
- * Usage:
- * Wrap the application in <AuthProvider> and access values via the useAuth() hook.
- *
- * AI Assistance Disclosure:
- * Portions of this implementation and documentation were developed with the assistance of
- * ChatGPT (OpenAI) and have been reviewed and adapted for this project.
+ * Important security behavior:
+ * - JWT token is stored in localStorage so the user can stay logged in.
+ * - The vault password is NEVER stored in localStorage.
+ * - The vault password only exists in React memory after successful OTP verification.
+ * - If the page refreshes, vaultPassword is lost and the user should log in again.
  */
 
 import { createContext, useContext, useState } from "react";
@@ -27,83 +14,126 @@ import { apiFetch } from "../services/api";
 const AuthContext = createContext();
 
 function getLocalJSON(key, fallback) {
-	try {
-		const value = localStorage.getItem(key);
-		return value ? JSON.parse(value) : fallback;
-	} catch {
-		return fallback;
-	}
+  try {
+    const value = localStorage.getItem(key);
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 export function AuthProvider({ children }) {
+  // User metadata is safe to persist. Do not store sensitive vault data here.
   const [user, setUser] = useState(() => getLocalJSON("user", null));
-	const [token, setToken] = useState(
-    () => localStorage.getItem("token") || null
-  );
 
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    () => !!localStorage.getItem("token")
-  );
+  // JWT is persisted so authenticated API requests can continue after refresh.
+  const [token, setToken] = useState(() => localStorage.getItem("token") || null);
 
-  const register = (email, password) => {
-    // TODO: API call to register a user into the backend
-    setIsAuthenticated(true);
-  };
+  /*
+   * Stores email/password only between login and OTP verification.
+   * This lets us avoid asking the user for a separate vault password.
+   * Do not persist this to localStorage or sessionStorage.
+   */
+  const [pendingLogin, setPendingLogin] = useState(null);
 
-  // const login = (email, password) => {
-  //   // Test dummy example account for development purposes.
-  //   // TODO: Replace with backend authentication.
-  //   if (email === "test@example.com" && password === "password") {
-  //     setIsAuthenticated(true);
-  //     setUser({ email });
+  /*
+   * This password is used by frontend crypto utilities to encrypt/decrypt vault data.
+   * It only exists in memory and is cleared on logout or page refresh.
+   */
+  const [vaultPassword, setVaultPassword] = useState(null);
 
-  //     // Only auth/session metadata is persisted here.
-  //     // Plaintext vault data should never be persisted.
-  //     localStorage.setItem("isAuthenticated", JSON.stringify(true));
-  //     localStorage.setItem("user", JSON.stringify({ email }));
-  //   } else {
-  //     alert("Invalid email or password");
-  //   }
-  // };
+  const isAuthenticated = !!token;
 
-  const login = (email, password) => {
-    // Test dummy example account for development purposes.
-    // TODO: Replace with backend authentication.
-    if (email === "test@example.com" && password === "password") {
-      setIsAuthenticated(true);
-      setUser({ email });
+  async function register(email, password) {
+    await apiFetch("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
 
-      // Only auth/session metadata is persisted here.
-      // Plaintext vault data should never be persisted.
-      localStorage.setItem("isAuthenticated", JSON.stringify(true));
-      localStorage.setItem("user", JSON.stringify({ email }));
+    return true;
+  }
 
-      return true;
+  async function login(email, password) {
+    /*
+     * Backend verifies email/password and sends OTP.
+     * This does NOT fully authenticate the user yet.
+     */
+    await apiFetch("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+
+    // Temporarily keep credentials until OTP is verified.
+    setPendingLogin({ email, password });
+
+    return true;
+  }
+
+  async function verifyOtp(otp) {
+    if (!pendingLogin) {
+      throw new Error("No pending login found. Please log in again.");
     }
 
-    return false;
-  };
+    const response = await apiFetch("/api/auth/verify-otp", {
+      method: "POST",
+      body: JSON.stringify({
+        email: pendingLogin.email,
+        otp,
+      }),
+    });
 
-  const logout = () => {
-    // Clear auth state from React memory.
+    const authToken = response.token;
+
+    if (!authToken) {
+      throw new Error("No token returned from server.");
+    }
+
+    // Store auth state.
+    setToken(authToken);
+    setUser({ email: pendingLogin.email });
+
+    // Store vault password only in memory for encryption/decryption.
+    setVaultPassword(pendingLogin.password);
+
+    // Persist only non-vault-sensitive auth/session metadata.
+    localStorage.setItem("token", authToken);
+    localStorage.setItem("user", JSON.stringify({ email: pendingLogin.email }));
+
+    // Clear temporary login state after OTP succeeds.
+    setPendingLogin(null);
+
+    return true;
+  }
+
+  function logout() {
+    // Clear React memory.
     setUser(null);
-		setToken(null);
-    setIsAuthenticated(false);
+    setToken(null);
+    setPendingLogin(null);
+    setVaultPassword(null);
 
-    // Clear persisted auth metadata.
+    // Clear persisted session metadata.
+    localStorage.removeItem("token");
     localStorage.removeItem("user");
-    localStorage.removeItem("isAuthenticated");
 
-    // Defensive cleanup in case anything session-based is added later.
+    // Defensive cleanup.
     sessionStorage.clear();
-		localStorage.removeItem("user");
-		localStorage.removeItem("token");
-  };
+  }
 
   return (
     <AuthContext.Provider
-			value={{ user, token, isAuthenticated, login, logout, register }}
-		>
+      value={{
+        user,
+        token,
+        isAuthenticated,
+        pendingLogin,
+        vaultPassword,
+        register,
+        login,
+        verifyOtp,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
