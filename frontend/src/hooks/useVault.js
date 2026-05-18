@@ -1,134 +1,182 @@
 // Utilized AI for help with logic of vault API calls and usage.
 
+/*
+ * Centralized vault hook responsible for:
+ * - Fetching encrypted vault records from backend
+ * - Decrypting vault records in frontend memory
+ * - Encrypting records before transmission
+ * - CRUD operations for vault items
+ *
+ * Security model:
+ * - Backend never receives plaintext credential data
+ * - Decryption only occurs client-side
+ * - vaultPassword comes from AuthContext memory only
+ */
+
 import { useEffect, useState, useCallback } from "react";
+
 import { apiFetch } from "../services/api";
+import { encryptData, decryptData } from "../utils/crypto";
+import { useAuth } from "../context/AuthContext";
 
 export default function useVault(autoFetch = true) {
-	const [items, setItems] = useState([]);
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState(null);
+  const { vaultPassword } = useAuth();
 
-	const fetchVault = useCallback(async () => {
-		setLoading(true);
-		setError(null);
-		try {
-			const mockData = [
-				{
-					id: 1,
-					title: "Gmail",
-					data: "mock_encrypted_data",
-					iv: "mock_iv",
-					salt: "mock_salt",
-				},
-				{
-					id: 2,
-					title: "GitHub",
-					data: "mock_encrypted_data",
-					iv: "mock_iv",
-					salt: "mock_salt",
-				},
-				{
-					id: 3,
-					title: "AWS Console",
-					data: "mock_encrypted_data",
-					iv: "mock_iv",
-					salt: "mock_salt",
-				},
-				{
-					id: 4,
-					title: "Database Password",
-					data: "mock_encrypted_data",
-					iv: "mock_iv",
-					salt: "mock_salt",
-				},
-				{
-					id: 5,
-					title: "Banking App",
-					data: "mock_encrypted_data",
-					iv: "mock_iv",
-					salt: "mock_salt",
-				},
-				{
-					id: 6,
-					title: "Work VPN",
-					data: "mock_encrypted_data",
-					iv: "mock_iv",
-					salt: "mock_salt",
-				},
-			];
+  // Plaintext vault items used by the UI after decryption.
+  const [items, setItems] = useState([]);
 
-			setItems(
-				mockData.map((i) => ({
-					id: i.id,
-					title: i.title,
-					favorite: i.id === 1,
-					raw: i,
-				})),
-			);
-			return;
+  // Loading/error state for async API operations.
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-			// Uncomment below to use real API:
-			// const data = await apiFetch("/api/vault", { method: "GET" });
-			// setItems(
-			//   Array.isArray(data)
-			//     ? data.map((i) => ({ id: i.id, title: i.title, raw: i }))
-			//     : []
-			// );
-		} catch (err) {
-			setError(err);
-		} finally {
-			setLoading(false);
-		}
-	}, []);
+  /*
+   * Fetch encrypted vault data from backend,
+   * then decrypt it in frontend memory.
+   */
+  const fetchVault = useCallback(async () => {
+    // Cannot decrypt without vault password.
+    if (!vaultPassword) return;
 
-	const createItem = useCallback(
-		async (payload) => {
-			// payload: { title, data, iv, salt }
-			const res = await apiFetch("/api/save", {
-				method: "POST",
-				body: JSON.stringify(payload),
-			});
-			// refresh list
-			await fetchVault();
-			return res;
-		},
-		[fetchVault],
-	);
+    setLoading(true);
+    setError(null);
 
-	const updateItem = useCallback(
-		async (id, payload) => {
-			const res = await apiFetch(`/api/update/${id}`, {
-				method: "PUT",
-				body: JSON.stringify(payload),
-			});
-			await fetchVault();
-			return res;
-		},
-		[fetchVault],
-	);
+    try {
+      // Backend returns encrypted records only.
+      const encryptedItems = await apiFetch("/api/vault", {
+        method: "GET",
+      });
 
-	const deleteItem = useCallback(
-		async (id) => {
-			const res = await apiFetch(`/api/delete/${id}`, {
-				method: "DELETE",
-			});
-			await fetchVault();
-			return res;
-		},
-		[fetchVault],
-	);
+      // Decrypt each vault item individually.
+      const decryptedItems = await Promise.all(
+        encryptedItems.map(async (item) => {
+          const decrypted = await decryptData(
+            {
+              ciphertext: item.data,
+              iv: item.iv,
+              salt: item.salt,
+            },
+            vaultPassword
+          );
 
-	useEffect(() => {
-		if (autoFetch) fetchVault();
-	}, [autoFetch, fetchVault]);
+          return {
+            id: item.id,
+            title: item.title,
 
-	return {
-		items,
-		loading,
-		error,
-		fetchVault,
-		createItem,
-		updateItem,
-		deleteItem,
-	};
+            // Spread decrypted credential fields into UI object.
+            ...decrypted,
+          };
+        })
+      );
+
+      setItems(decryptedItems);
+
+    } catch (err) {
+      console.error("Vault fetch/decrypt failed:", err);
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [vaultPassword]);
+
+  /*
+   * Encrypt and save a new vault item.
+   */
+  const createItem = useCallback(
+    async (formValues) => {
+      if (!vaultPassword) {
+        throw new Error("Vault is locked.");
+      }
+
+      /*
+       * Encrypt entire credential payload client-side.
+       * Backend only receives ciphertext.
+       */
+      const encrypted = await encryptData(
+        formValues,
+        vaultPassword
+      );
+
+      const payload = {
+        title: formValues.title,
+
+        // Backend field naming
+        data: encrypted.ciphertext,
+        iv: encrypted.iv,
+        salt: encrypted.salt,
+      };
+
+      await apiFetch("/api/save", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      // Refresh vault after save.
+      await fetchVault();
+    },
+    [vaultPassword, fetchVault]
+  );
+
+  /*
+   * Encrypt and update an existing vault item.
+   */
+  const updateItem = useCallback(
+    async (id, formValues) => {
+      if (!vaultPassword) {
+        throw new Error("Vault is locked.");
+      }
+
+      const encrypted = await encryptData(
+        formValues,
+        vaultPassword
+      );
+
+      const payload = {
+        title: formValues.title,
+        data: encrypted.ciphertext,
+        iv: encrypted.iv,
+        salt: encrypted.salt,
+      };
+
+      await apiFetch(`/api/update/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      });
+
+      await fetchVault();
+    },
+    [vaultPassword, fetchVault]
+  );
+
+  /*
+   * Delete vault item by ID.
+   */
+  const deleteItem = useCallback(
+    async (id) => {
+      await apiFetch(`/api/delete/${id}`, {
+        method: "DELETE",
+      });
+
+      await fetchVault();
+    },
+    [fetchVault]
+  );
+
+  /*
+   * Automatically fetch vault after login/authentication.
+   */
+  useEffect(() => {
+    if (autoFetch && vaultPassword) {
+      fetchVault();
+    }
+  }, [autoFetch, vaultPassword, fetchVault]);
+
+  return {
+    items,
+    loading,
+    error,
+    fetchVault,
+    createItem,
+    updateItem,
+    deleteItem,
+  };
 }
