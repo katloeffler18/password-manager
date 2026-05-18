@@ -222,7 +222,7 @@ const DashboardPage = () => {
                           }
                         }}
                       >
-                        Copy
+                        Copy Password
                       </button>
 
                       <button
