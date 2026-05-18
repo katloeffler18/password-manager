@@ -8,7 +8,12 @@ import useVault from "../hooks/useVault";
 import VaultModal from "../components/VaultModal";
 
 const DashboardPage = () => {
-  const { isAuthenticated, user, logout } = useAuth();
+  const {
+	isAuthenticated,
+	user,
+	logout,
+	vaultPassword,
+  } = useAuth();
   const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
@@ -32,9 +37,17 @@ const DashboardPage = () => {
     deleteItem,
   } = useVault(true);
 
+  /*
+  * If auth token exists but vault password is missing,
+  * the encrypted vault can no longer be accessed safely.
+  * Force logout to maintain a clean authenticated state.
+  */
   useEffect(() => {
-    if (!isAuthenticated) navigate("/login");
-  }, [isAuthenticated, navigate]);
+	if (!isAuthenticated || !vaultPassword) {
+		logout();
+		navigate("/login");
+	}
+  }, [isAuthenticated, vaultPassword, logout, navigate]);
 
   const filteredItems = useMemo(() => {
     return (items || []).filter((item) =>
