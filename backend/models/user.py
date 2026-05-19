@@ -17,6 +17,11 @@ class User(db.Model):
         db.String(128),
         nullable=False
     )
+    
+    otp_secret = db.Column(
+        db.String(128), 
+        nullable=False
+    )
 
     created_at = db.Column(
         db.DateTime,
@@ -29,4 +34,3 @@ class User(db.Model):
         backref='owner',
         lazy=True,
         cascade='all, delete-orphan'
-    )
