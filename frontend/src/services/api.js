@@ -22,13 +22,27 @@ export async function apiFetch(path, options = {}) {
 
 	if (!response.ok) {
 		const text = await response.text().catch(() => null);
+
 		let body = null;
+
 		try {
 			body = text ? JSON.parse(text) : null;
 		} catch {}
+
+		/*
+		* If authentication fails, clear persisted session state.
+		* This prevents stale/invalid JWT tokens from remaining in localStorage.
+		*/
+		if (response.status === 401) {
+			localStorage.removeItem("token");
+			localStorage.removeItem("user");
+		}
+
 		const error = new Error(`API request failed: ${response.status}`);
+
 		error.status = response.status;
 		error.body = body;
+
 		throw error;
 	}
 
