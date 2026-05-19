@@ -33,6 +33,7 @@ def login():
     email = data.get('email')
     user = User.query.filter_by(email=email).first()
     if user and verify_password(data.get('password'), user.password_hash):
+
         # Generate OTP
         totp = pyotp.TOTP(user.otp_secret, interval=600)
         curr_otp = totp.now()
