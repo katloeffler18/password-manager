@@ -132,18 +132,23 @@ export async function decryptData(payload, password) {
     throw new Error("Password is required for decryption");
   }
 
-  if (!payload?.salt || !payload?.iv || !payload?.ciphertext) {
+  if (
+    !payload ||
+    typeof payload.salt !== "string" ||
+    typeof payload.iv !== "string" ||
+    typeof payload.ciphertext !== "string"
+  ) {
     throw new Error("Invalid encrypted payload");
   }
 
-  const salt = base64ToBytes(payload.salt);
-  const iv = base64ToBytes(payload.iv);
-  const ciphertext = base64ToBytes(payload.ciphertext);
-
-  const crypto = getCrypto();
-  const key = await deriveKey(password, salt);
-
   try {
+    const salt = base64ToBytes(payload.salt);
+    const iv = base64ToBytes(payload.iv);
+    const ciphertext = base64ToBytes(payload.ciphertext);
+
+    const crypto = getCrypto();
+    const key = await deriveKey(password, salt);
+
     const decrypted = await crypto.subtle.decrypt(
       {
         name: ALGORITHM,
