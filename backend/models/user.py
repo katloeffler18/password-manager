@@ -34,3 +34,4 @@ class User(db.Model):
         backref='owner',
         lazy=True,
         cascade='all, delete-orphan'
+    )
