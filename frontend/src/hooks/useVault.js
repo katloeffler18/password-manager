@@ -19,6 +19,21 @@ import { apiFetch } from "../services/api";
 import { encryptData, decryptData } from "../utils/crypto";
 import { useAuth } from "../context/AuthContext";
 
+/*
+ * Normalizes vault form data before encryption.
+ * Optional fields are stored as empty strings instead of undefined/null
+ * so encryption and editing remain stable.
+ */
+function normalizeVaultItem(formValues) {
+  return {
+    title: formValues?.title?.trim() || "",
+    service: formValues?.service || "",
+    username: formValues?.username || "",
+    password: formValues?.password || "",
+    notes: formValues?.notes || "",
+  };
+}
+
 export default function useVault(autoFetch = true) {
   const { vaultPassword } = useAuth();
 
