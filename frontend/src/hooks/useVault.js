@@ -106,13 +106,15 @@ export default function useVault(autoFetch = true) {
        * Encrypt entire credential payload client-side.
        * Backend only receives ciphertext.
        */
+      const normalizedItem = normalizeVaultItem(formValues);
+
       const encrypted = await encryptData(
-        formValues,
+        normalizedItem,
         vaultPassword
       );
 
       const payload = {
-        title: formValues.title,
+        title: normalizedItem.title,,
 
         // Backend field naming
         data: encrypted.ciphertext,
@@ -140,13 +142,15 @@ export default function useVault(autoFetch = true) {
         throw new Error("Vault is locked.");
       }
 
+      const normalizedItem = normalizeVaultItem(formValues);
+
       const encrypted = await encryptData(
-        formValues,
+        normalizedItem,
         vaultPassword
       );
 
       const payload = {
-        title: formValues.title,
+        title: normalizedItem.title,,
         data: encrypted.ciphertext,
         iv: encrypted.iv,
         salt: encrypted.salt,
