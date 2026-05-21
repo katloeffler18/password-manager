@@ -114,7 +114,7 @@ export default function useVault(autoFetch = true) {
       );
 
       const payload = {
-        title: normalizedItem.title,,
+        title: normalizedItem.title,
 
         // Backend field naming
         data: encrypted.ciphertext,
@@ -150,7 +150,7 @@ export default function useVault(autoFetch = true) {
       );
 
       const payload = {
-        title: normalizedItem.title,,
+        title: normalizedItem.title,
         data: encrypted.ciphertext,
         iv: encrypted.iv,
         salt: encrypted.salt,
