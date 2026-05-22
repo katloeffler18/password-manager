@@ -4,48 +4,12 @@ from flask_jwt_extended import JWTManager
 from dotenv import load_dotenv
 import os
 import logging
-import socket  # <-- Added for DNS resolution
-from urllib.parse import urlparse, urlunparse  # <-- Added for string parsing
 from logging.handlers import RotatingFileHandler
 
 # Load DB utilities and models
 from utils.db import db, init_db
 from models.user import User
 from models.vault import Vault
-
-
-def force_ipv4_url(url_string):
-    """
-    Parses the database URL, forces DNS resolution to an IPv4 address,
-    and returns a rebuilt URL string to bypass Render's IPv6 routing traps.
-    """
-    try:
-        parsed = urlparse(url_string)
-        hostname = parsed.hostname
-        
-        # Look up IPv4 addresses specifically
-        addr_info = socket.getaddrinfo(hostname, parsed.port, socket.AF_INET, socket.SOCK_STREAM)
-        ipv4_address = addr_info[0][4][0]
-        
-        # Reconstruct the netloc using the IP instead of the text hostname
-        # format: user:password@IP:port
-        auth_part = f"{parsed.username}:{parsed.password}" if parsed.password else parsed.username
-        new_netloc = f"{auth_part}@{ipv4_address}:{parsed.port}"
-        
-        # Rebuild full URI
-        rebuilt_url = urlunparse((
-            parsed.scheme,
-            new_netloc,
-            parsed.path,
-            parsed.params,
-            parsed.query,
-            parsed.fragment
-        ))
-        return rebuilt_url
-    except Exception as e:
-        # Fall back to original string if DNS resolution fails for any reason
-        print(f"----> IPv4 Resolution helper failed, falling back: {e}")
-        return url_string
 
 
 def setup_logging(app):
@@ -85,7 +49,7 @@ def create_app(config_class_name=None):
     if config_class_name == 'ProductionConfig':
         from config import ProductionConfig
         app.config.from_object(ProductionConfig)
-        app.logger.info('Production environment configured successfully with explicit IPv4 URI mapping.')
+        app.logger.info('Production environment configured successfully with production database variables.')
     else:
         basedir = os.path.abspath(os.path.dirname(__file__))
         app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "instance", "database.db")}'
