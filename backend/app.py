@@ -4,6 +4,8 @@ from flask_jwt_extended import JWTManager
 from dotenv import load_dotenv
 import os
 import logging
+import socket  # <-- Added for DNS resolution
+from urllib.parse import urlparse, urlunparse  # <-- Added for string parsing
 from logging.handlers import RotatingFileHandler
 
 # Load DB utilities and models
@@ -12,21 +14,47 @@ from models.user import User
 from models.vault import Vault
 
 
+def force_ipv4_url(url_string):
+    """
+    Parses the database URL, forces DNS resolution to an IPv4 address,
+    and returns a rebuilt URL string to bypass Render's IPv6 routing traps.
+    """
+    try:
+        parsed = urlparse(url_string)
+        hostname = parsed.hostname
+        
+        # Look up IPv4 addresses specifically
+        addr_info = socket.getaddrinfo(hostname, parsed.port, socket.AF_INET, socket.SOCK_STREAM)
+        ipv4_address = addr_info[0][4][0]
+        
+        # Reconstruct the netloc using the IP instead of the text hostname
+        # format: user:password@IP:port
+        auth_part = f"{parsed.username}:{parsed.password}" if parsed.password else parsed.username
+        new_netloc = f"{auth_part}@{ipv4_address}:{parsed.port}"
+        
+        # Rebuild full URI
+        rebuilt_url = urlunparse((
+            parsed.scheme,
+            new_netloc,
+            parsed.path,
+            parsed.params,
+            parsed.query,
+            parsed.fragment
+        ))
+        return rebuilt_url
+    except Exception as e:
+        # Fall back to original string if DNS resolution fails for any reason
+        print(f"----> IPv4 Resolution helper failed, falling back: {e}")
+        return url_string
+
+
 def setup_logging(app):
     """
     Configure application logging
     Logs are written to instance/app.log
     """
-    # makes sure that instance folder exists
     os.makedirs('instance', exist_ok=True)
 
-    # creates formatter
-    logging.Formatter(
-        '%(asctime)s %(levelname)s: %(message)s '
-        '[in %(pathname)s:%(lineno)d]'
-    )
-
-    # creates rotating file handler
     file_handler = RotatingFileHandler(
         'instance/app.log',
         maxBytes=10240,
@@ -39,7 +67,6 @@ def setup_logging(app):
         '[in %(pathname)s:%(lineno)d]'
     ))
 
-    # prevents duplicate handlers in debug mode
     if not any(isinstance(h, RotatingFileHandler) for h in app.logger.handlers):
         app.logger.addHandler(file_handler)
 
@@ -51,31 +78,28 @@ def create_app(config_class_name=None):
     load_dotenv()
     
     app = Flask(__name__)
-
-    # Set up logging
     setup_logging(app)
-
     CORS(app)
 
     # DYNAMIC CONFIGURATION LOADER
     if config_class_name == 'ProductionConfig':
-        # Load the production definitions we customized in config.py
         from config import ProductionConfig
         app.config.from_object(ProductionConfig)
         
-        # FORCE OVERRIDE: Intercept Render's ecosystem variables.
-        # This explicitly uses port 5432 and bypasses the 6543 transaction pooler.
+        # Intercept and force direct IPv4 resolution
         direct_url = os.environ.get('SUPABASE_DIRECT_URL')
         if direct_url:
             if direct_url.startswith("postgres://"):
                 direct_url = direct_url.replace("postgres://", "postgresql://", 1)
-            app.config['SQLALCHEMY_DATABASE_URI'] = direct_url
-            app.logger.info('Production forced tracking: SQLALCHEMY_DATABASE_URI routed through SUPABASE_DIRECT_URL.')
+            
+            # Convert text domain to raw IPv4 
+            ipv4_direct_url = force_ipv4_url(direct_url)
+            app.config['SQLALCHEMY_DATABASE_URI'] = ipv4_direct_url
+            app.logger.info('Production forced tracking: SQLALCHEMY_DATABASE_URI converted to explicit IPv4.')
         else:
             app.logger.warning('Production warning: SUPABASE_DIRECT_URL not caught. Using config fallback.')
             
     else:
-        # Fallback to standard local development variables
         basedir = os.path.abspath(os.path.dirname(__file__))
         app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "instance", "database.db")}'
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -85,13 +109,10 @@ def create_app(config_class_name=None):
     jwt = JWTManager(app)
     init_db(app)
 
-    # OPTION 2: AUTOMATIC TABLE CREATION
-    # This automatically syncs missing structural tables in SQLite or Supabase Postgres on boot
     with app.app_context():
         db.create_all()
         app.logger.info('Database tables verified/created successfully.')
 
-    # Register blueprints inside the function to prevent import problems
     from routes.auth import auth_bp
     from routes.vault import vault_bp
     
@@ -101,9 +122,6 @@ def create_app(config_class_name=None):
     return app
 
 
-# This conditional block isolates execution environments.
-# When running locally using `python app.py`, it boots dev mode.
-# When running on Render via Gunicorn, Gunicorn ignores this block and routes through wsgi.py instead.
 if __name__ == '__main__':
     app = create_app()
     app.run(host='127.0.0.1', port=5001, debug=True)
