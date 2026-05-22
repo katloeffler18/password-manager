@@ -15,9 +15,8 @@ from models.vault import Vault
 def setup_logging(app):
     """
     Configure application logging
-    Logs are written to instace/app.log
+    Logs are written to instance/app.log
     """
-
     # makes sure that instance folder exists
     os.makedirs('instance', exist_ok=True)
 
@@ -42,30 +41,40 @@ def setup_logging(app):
         app.logger.addHandler(file_handler)
 
     app.logger.setLevel(logging.INFO)
-
     app.logger.info('Application startup')
 
 
-def create_app():
+def create_app(config_class_name=None):
     load_dotenv()
     
     app = Flask(__name__)
 
-    # set up logging
+    # Set up logging
     setup_logging(app)
 
     CORS(app)
 
-    # Configuration
-    # Use an absolute path for the instance folder to avoid Folder Not Found errors
-    basedir = os.path.abspath(os.path.dirname(__file__))
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "instance", "database.db")}'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'dev-secret')
+    # DYNAMIC CONFIGURATION LOADER
+    if config_class_name == 'ProductionConfig':
+        # Load the production definitions we customized in config.py
+        from config import ProductionConfig
+        app.config.from_object(ProductionConfig)
+    else:
+        # Fallback to standard local development variables
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "instance", "database.db")}'
+        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+        app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'dev-secret')
 
     # Initialize extensions
     jwt = JWTManager(app)
     init_db(app)
+
+    # OPTION 2: AUTOMATIC TABLE CREATION
+    # This automatically syncs missing structural tables in SQLite or Supabase Postgres on boot
+    with app.app_context():
+        db.create_all()
+        app.logger.info('Database tables verified/created successfully.')
 
     # Register blueprints inside the function to prevent import problems
     from routes.auth import auth_bp
@@ -76,7 +85,10 @@ def create_app():
 
     return app
 
-app = create_app()
 
+# This conditional block isolates execution environments.
+# When running locally using `python app.py`, it boots dev mode.
+# When running on Render via Gunicorn, Gunicorn ignores this block and routes through wsgi.py instead.
 if __name__ == '__main__':
+    app = create_app()
     app.run(host='127.0.0.1', port=5001, debug=True)
