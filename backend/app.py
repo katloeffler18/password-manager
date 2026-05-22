@@ -21,7 +21,7 @@ def setup_logging(app):
     os.makedirs('instance', exist_ok=True)
 
     # creates formatter
-    formatter = logging.Formatter(
+    logging.Formatter(
         '%(asctime)s %(levelname)s: %(message)s '
         '[in %(pathname)s:%(lineno)d]'
     )
@@ -34,7 +34,10 @@ def setup_logging(app):
     )
     
     file_handler.setLevel(logging.INFO)
-    file_handler.setFormatter(formatter)
+    file_handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s '
+        '[in %(pathname)s:%(lineno)d]'
+    ))
 
     # prevents duplicate handlers in debug mode
     if not any(isinstance(h, RotatingFileHandler) for h in app.logger.handlers):
@@ -59,6 +62,18 @@ def create_app(config_class_name=None):
         # Load the production definitions we customized in config.py
         from config import ProductionConfig
         app.config.from_object(ProductionConfig)
+        
+        # FORCE OVERRIDE: Intercept Render's ecosystem variables.
+        # This explicitly uses port 5432 and bypasses the 6543 transaction pooler.
+        direct_url = os.environ.get('SUPABASE_DIRECT_URL')
+        if direct_url:
+            if direct_url.startswith("postgres://"):
+                direct_url = direct_url.replace("postgres://", "postgresql://", 1)
+            app.config['SQLALCHEMY_DATABASE_URI'] = direct_url
+            app.logger.info('Production forced tracking: SQLALCHEMY_DATABASE_URI routed through SUPABASE_DIRECT_URL.')
+        else:
+            app.logger.warning('Production warning: SUPABASE_DIRECT_URL not caught. Using config fallback.')
+            
     else:
         # Fallback to standard local development variables
         basedir = os.path.abspath(os.path.dirname(__file__))
