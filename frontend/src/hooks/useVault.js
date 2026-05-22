@@ -19,6 +19,21 @@ import { apiFetch } from "../services/api";
 import { encryptData, decryptData } from "../utils/crypto";
 import { useAuth } from "../context/AuthContext";
 
+/*
+ * Normalizes vault form data before encryption.
+ * Optional fields are stored as empty strings instead of undefined/null
+ * so encryption and editing remain stable.
+ */
+function normalizeVaultItem(formValues) {
+  return {
+    title: formValues?.title?.trim() || "",
+    service: formValues?.service || "",
+    username: formValues?.username || "",
+    password: formValues?.password || "",
+    notes: formValues?.notes || "",
+  };
+}
+
 export default function useVault(autoFetch = true) {
   const { vaultPassword } = useAuth();
 
@@ -91,13 +106,15 @@ export default function useVault(autoFetch = true) {
        * Encrypt entire credential payload client-side.
        * Backend only receives ciphertext.
        */
+      const normalizedItem = normalizeVaultItem(formValues);
+
       const encrypted = await encryptData(
-        formValues,
+        normalizedItem,
         vaultPassword
       );
 
       const payload = {
-        title: formValues.title,
+        title: normalizedItem.title,
 
         // Backend field naming
         data: encrypted.ciphertext,
@@ -125,13 +142,15 @@ export default function useVault(autoFetch = true) {
         throw new Error("Vault is locked.");
       }
 
+      const normalizedItem = normalizeVaultItem(formValues);
+
       const encrypted = await encryptData(
-        formValues,
+        normalizedItem,
         vaultPassword
       );
 
       const payload = {
-        title: formValues.title,
+        title: normalizedItem.title,
         data: encrypted.ciphertext,
         iv: encrypted.iv,
         salt: encrypted.salt,
