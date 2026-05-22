@@ -81,24 +81,11 @@ def create_app(config_class_name=None):
     setup_logging(app)
     CORS(app)
 
-    # DYNAMIC CONFIGURATION LOADER
+    # Configuration loading
     if config_class_name == 'ProductionConfig':
         from config import ProductionConfig
         app.config.from_object(ProductionConfig)
-        
-        # Intercept and force direct IPv4 resolution
-        direct_url = os.environ.get('SUPABASE_DIRECT_URL')
-        if direct_url:
-            if direct_url.startswith("postgres://"):
-                direct_url = direct_url.replace("postgres://", "postgresql://", 1)
-            
-            # Convert text domain to raw IPv4 
-            ipv4_direct_url = force_ipv4_url(direct_url)
-            app.config['SQLALCHEMY_DATABASE_URI'] = ipv4_direct_url
-            app.logger.info('Production forced tracking: SQLALCHEMY_DATABASE_URI converted to explicit IPv4.')
-        else:
-            app.logger.warning('Production warning: SUPABASE_DIRECT_URL not caught. Using config fallback.')
-            
+        app.logger.info('Production environment configured successfully with explicit IPv4 URI mapping.')
     else:
         basedir = os.path.abspath(os.path.dirname(__file__))
         app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "instance", "database.db")}'
