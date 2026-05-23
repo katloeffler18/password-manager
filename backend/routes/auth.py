@@ -39,7 +39,7 @@ def login():
         curr_otp = totp.now()
 
         # Setup email server
-        email_server = smtplib.SMTP("smtp.gmail.com", 465, timeout=10)
+        email_server = smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10)
         from_email = os.getenv("EMAIL_USERNAME")
         email_password = os.getenv("EMAIL_PASSWORD")
         email_server.login(from_email, email_password)
