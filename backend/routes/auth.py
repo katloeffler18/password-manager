@@ -35,7 +35,10 @@ def login():
     if user and verify_password(data.get('password'), user.password_hash):
 
         # Generate OTP
-        totp = pyotp.TOTP(user.otp_secret, interval=600)
+        otp_secret = pyotp.random_base32()
+        user.otp_secret = otp_secret
+        db.session.commit()
+        totp = pyotp.TOTP(otp_secret, interval=600)
         curr_otp = totp.now()
 
         # Setup email server
