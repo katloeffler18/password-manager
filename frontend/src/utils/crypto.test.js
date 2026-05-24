@@ -78,6 +78,69 @@ describe("crypto utilities", () => {
     ).rejects.toThrow();
   });
 
+  // Ensures empty optional credential fields are safely encrypted/decrypted
+  it("handles empty optional fields during encryption and decryption", async () => {
+    const data = {
+      title: "Gmail",
+      service: "",
+      username: "",
+      password: "secret-password",
+      notes: "",
+    };
+
+    const encrypted = await encryptData(data, "master-password");
+    const decrypted = await decryptData(encrypted, "master-password");
+
+    expect(decrypted).toEqual(data);
+  });
+
+  // Simulates editing a credential and confirms the full updated payload is re-encrypted
+  it("re-encrypts the full updated credential payload", async () => {
+    const original = {
+      title: "Gmail",
+      service: "gmail.com",
+      username: "kat",
+      password: "old-password",
+      notes: "old notes",
+    };
+
+    const updated = {
+      ...original,
+      password: "new-password",
+      notes: "updated notes",
+    };
+
+    const encryptedOriginal = await encryptData(original, "master-password");
+    const encryptedUpdated = await encryptData(updated, "master-password");
+
+    const decryptedUpdated = await decryptData(
+      encryptedUpdated,
+      "master-password"
+    );
+
+    expect(encryptedUpdated.ciphertext).not.toBe(encryptedOriginal.ciphertext);
+    expect(decryptedUpdated).toEqual(updated);
+  });
+
+  // Ensures corrupted encrypted payloads produce a clear error
+  it("shows a clear error for corrupted encrypted payloads", async () => {
+    const encrypted = await encryptData(
+      { title: "Gmail", password: "secret-password" },
+      "master-password"
+    );
+
+    const corruptedPayload = {
+      ...encrypted,
+      ciphertext: "not-valid-ciphertext",
+    };
+
+    await expect(
+      decryptData(corruptedPayload, "master-password")
+    ).rejects.toThrow(
+      "Unable to decrypt data. Password may be incorrect or payload may be corrupted."
+    );
+  });
+
   // ensures that encryptData creates different ciphertext with the same data
   it("creates different ciphertext for the same data", async () => {
     const data = { password: "secret-password" };

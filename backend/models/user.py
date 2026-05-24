@@ -35,4 +35,3 @@ class User(db.Model):
         lazy=True,
         cascade='all, delete-orphan'
     )
-    
