@@ -14,7 +14,7 @@ class User(db.Model):
     )
 
     password_hash = db.Column(
-        db.String(128),
+        db.String(255),
         nullable=False
     )
     

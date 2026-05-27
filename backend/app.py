@@ -15,19 +15,10 @@ from models.vault import Vault
 def setup_logging(app):
     """
     Configure application logging
-    Logs are written to instace/app.log
+    Logs are written to instance/app.log
     """
-
-    # makes sure that instance folder exists
     os.makedirs('instance', exist_ok=True)
 
-    # creates formatter
-    formatter = logging.Formatter(
-        '%(asctime)s %(levelname)s: %(message)s '
-        '[in %(pathname)s:%(lineno)d]'
-    )
-
-    # creates rotating file handler
     file_handler = RotatingFileHandler(
         'instance/app.log',
         maxBytes=10240,
@@ -35,39 +26,44 @@ def setup_logging(app):
     )
     
     file_handler.setLevel(logging.INFO)
-    file_handler.setFormatter(formatter)
+    file_handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s '
+        '[in %(pathname)s:%(lineno)d]'
+    ))
 
-    # prevents duplicate handlers in debug mode
     if not any(isinstance(h, RotatingFileHandler) for h in app.logger.handlers):
         app.logger.addHandler(file_handler)
 
     app.logger.setLevel(logging.INFO)
-
     app.logger.info('Application startup')
 
 
-def create_app():
+def create_app(config_class_name=None):
     load_dotenv()
     
     app = Flask(__name__)
-
-    # set up logging
     setup_logging(app)
-
     CORS(app)
 
-    # Configuration
-    # Use an absolute path for the instance folder to avoid Folder Not Found errors
-    basedir = os.path.abspath(os.path.dirname(__file__))
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "instance", "database.db")}'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'dev-secret')
+    # Configuration loading
+    if config_class_name == 'ProductionConfig':
+        from config import ProductionConfig
+        app.config.from_object(ProductionConfig)
+        app.logger.info('Production environment configured successfully with production database variables.')
+    else:
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(basedir, "instance", "database.db")}'
+        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+        app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'dev-secret')
 
     # Initialize extensions
     jwt = JWTManager(app)
     init_db(app)
 
-    # Register blueprints inside the function to prevent import problems
+    with app.app_context():
+        db.create_all()
+        app.logger.info('Database tables verified/created successfully.')
+
     from routes.auth import auth_bp
     from routes.vault import vault_bp
     
@@ -76,7 +72,7 @@ def create_app():
 
     return app
 
-app = create_app()
 
 if __name__ == '__main__':
+    app = create_app()
     app.run(host='127.0.0.1', port=5001, debug=True)
