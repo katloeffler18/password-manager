@@ -63,6 +63,16 @@ password-manager/
 
 ---
 
+## Prerequisites
+
+Before running the project locally, install:
+
+* Node.js and npm
+* Python 3.x
+* Git
+
+---
+
 ## Getting Started
 
 ### 1. Clone the Repository
@@ -82,15 +92,15 @@ cd backend
 python -m venv .venv
 
 # Mac/Linux
-source venv/bin/activate
+source .venv/bin/activate
 
 # Windows
-venv\Scripts\activate
+.venv\Scripts\activate
 
 pip install -r requirements.txt
 ```
 
-Create a `.env` file based on `.env.example`, then start the backend server:
+Create a `.env` file in the `backend` directory based on `.env.example`, then start the backend server:
 
 ```bash
 flask run
@@ -99,12 +109,20 @@ flask run
 By default, the backend runs on:
 
 ```text
-http://localhost:5001
+http://localhost:5000
 ```
 
 ---
 
 ### 3. Frontend Setup (React)
+
+Create a `.env` file in the `frontend` directory:
+
+```env
+REACT_APP_API_BASE_URL=http://localhost:5000
+```
+
+Then install dependencies and start the frontend:
 
 ```bash
 cd frontend
@@ -121,9 +139,27 @@ http://localhost:3000
 
 ---
 
+## Running Tests
+
+### Frontend Tests
+
+```bash
+cd frontend
+npm test
+```
+
+### Backend Tests
+
+```bash
+cd backend
+python -m pytest routes/tests
+```
+
+---
+
 ## Environment Variables
 
-Create a `.env` file in the backend directory using `.env.example` as a template.
+Create `.env` files in the frontend and backend directories using the provided examples and required configuration values.
 
 ⚠️ Do NOT commit `.env` files or sensitive credentials to GitHub.
 
