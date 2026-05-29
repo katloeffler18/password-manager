@@ -45,12 +45,12 @@ export function AuthProvider({ children }) {
   const isAuthenticated = !!token;
 
   async function register(email, password) {
-    await apiFetch("/api/auth/register", {
+    const response = await apiFetch("/api/auth/register", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
 
-    return true;
+    return response.otp_secret;
   }
 
   async function login(email, password) {
