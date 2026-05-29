@@ -48,29 +48,11 @@ def login():
     if user and verify_password(data.get('password'), user.password_hash):
         current_app.logger.info(f"Password verified for {email}. Requesting 2FA token verification.")
 
-        # Generate OTP
-        otp_secret = pyotp.random_base32()
-        user.otp_secret = otp_secret
-        db.session.commit()
-        totp = pyotp.TOTP(otp_secret, interval=600)
-        curr_otp = totp.now()
-
-        # Setup email server
-        email_server = smtplib.SMTP("smtp.gmail.com", 587)
-        email_server.starttls()
-        from_email = os.getenv("EMAIL_USERNAME")
-        email_password = os.getenv("EMAIL_PASSWORD")
-        email_server.login(from_email, email_password)
-
-        # Setup and send email
-        msg = EmailMessage()
-        msg["Subject"] = "OTP CODE"
-        msg["From"] = from_email
-        msg["To"] = email
-        msg.set_content("Your OTP is " + curr_otp + ". It will expire in 10 minutes.")
-        email_server.send_message(msg)
-
-        return jsonify({'message': 'OTP sent'}), 200
+        # Tells frontend to advance the user to MFA entry screen.
+        return jsonify({
+            'message': 'MFA verification required',
+            'mfa_required': True
+        }), 200
 
     return jsonify({'error': 'Invalid credentials'}), 401
 
