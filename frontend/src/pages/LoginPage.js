@@ -75,7 +75,7 @@ const LoginPage = () => {
        * Verify OTP and receive JWT token.
        * AuthContext also stores vaultPassword in memory here.
        */
-      await verifyOtp(otp);
+      await verifyOtp(otp, email);
 
       navigate("/vault");
 

@@ -8,8 +8,10 @@ const RegisterPage = () => {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
+	const [errorMsg, setErrorMsg] = useState("");
 
 	const [mfaSetup, setMfaSetup] = useState(false);
+	const [secretKey, setSecretKey] = useState("");
 
 	const { register } = useAuth();
 	const navigate = useNavigate();
@@ -32,11 +34,16 @@ const RegisterPage = () => {
 			return;
 		}
 
-		const ok = await register(email, password);
-		if (ok) {
+		try {
+			const secret = await register(email, password);
+			setSecretKey(secret);
 			setMfaSetup(true);
-		} else {
-			alert("Registration failed");
+		} catch (err) {
+			if (err.body && err.body.error) {
+				setErrorMsg(err.body.error);
+			} else {
+				setErrorMsg("Registration failed. Please try again.");
+			}
 		}
 	};
 
@@ -46,6 +53,16 @@ const RegisterPage = () => {
 				{!mfaSetup ? (
 					<>
 						<h1 className="text-center mb-4">Register</h1>
+
+						{errorMsg && (
+							<div
+								className="alert alert-danger py-2 small"
+								role="alert"
+							>
+								⚠️ {errorMsg}
+							</div>
+						)}
+
 						<form onSubmit={handleSubmit}>
 							<div className="mb-3">
 								<label className="form-label">Email:</label>
@@ -105,27 +122,25 @@ const RegisterPage = () => {
 					<div className="text-center">
 						<h1 className="h3 mb-3">🔒 Setup Your MFA</h1>
 						<p className="text-muted small">
-							To keep your vault secure, we have automatically
-							registered an **Email-based One-Time Password
-							(OTP)** method for your account.
+							To keep your vault secure, please add our account to
+							your chosen authenticator app (e.g., Google
+							Authenticator).
 						</p>
 						<div className="alert alert-info small text-start">
-							<strong>How it works:</strong> Each time you attempt
-							to unlock your vault, a unique security code will be
-							dispatched directly to:
-							<div className="text-break font-monospace mt-1">
-								<strong>{email}</strong>
+							<strong>Your Secret Key:</strong>
+							<div className="text-break font-monospace p-2 bg-dark text-white rounded mt-1 text-center select-all">
+								<strong>{secretKey}</strong>
 							</div>
 						</div>
 						<p className="small text-secondary">
-							Please verify you have access to this inbox before
-							proceeding.
+							Copy this key and paste it into your authenticator
+							application to begin tracking login codes.
 						</p>
 						<button
 							className="btn btn-primary w-100 mt-3"
 							onClick={() => navigate("/login")}
 						>
-							I Understand, Go to Login
+							Key Added, Go to Login
 						</button>
 					</div>
 				)}
