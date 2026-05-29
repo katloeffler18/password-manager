@@ -4,3 +4,6 @@ Flask-Migrate
 Flask-JWT-Extended
 Flask-CORS
 python-dotenv
+gunicorn
+psycopg2-binary
+pyotp

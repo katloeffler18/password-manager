@@ -1,36 +1,50 @@
 # CS467 Secure Password Manager
 
 ## Overview
+
 This project is a secure, web-based password manager designed to help users store and manage credentials safely. The system emphasizes security, usability, and transparency through client-side encryption, multi-factor authentication (MFA), and an open-source design.
 
+Vault credential data is encrypted locally within the browser before transmission to the backend API. The backend stores encrypted vault records and does not store plaintext credential data.
+
+---
+
 ## Key Features
-- User account creation and authentication
-- Multi-factor authentication (MFA) via email OTP
-- Encrypted credential vault (client-side encryption)
-- Password generation tool
-- Search and organization of stored credentials
-- Cloud-based deployment
+
+* User account creation and authentication
+* Multi-factor authentication (MFA) using an authenticator application
+* Client-side encrypted credential vault
+* Password generation tool
+* Secure vault CRUD operations
+* Search and organization of stored credentials
+* Cloud-based deployment
+
+---
 
 ## Tech Stack
 
 ### Frontend
-- React
-- JavaScript / HTML / CSS
-- CryptoJS (client-side encryption)
+
+* React
+* JavaScript / HTML / CSS
+* Web Crypto API (AES-GCM encryption)
+* React Context API
+* Bootstrap
 
 ### Backend
-- Flask
-- Flask-Login
-- Flask-WTF
-- SQLAlchemy
-- PyOTP (for OTP handling)
+
+* Flask
+* Flask-JWT-Extended
+* Flask-WTF
+* SQLAlchemy
 
 ### Database
-- SQLite (local development)
-- PostgreSQL / Google Cloud SQL (production)
+
+* SQLite (local development)
+* PostgreSQL (production)
 
 ### Deployment
-- Google Cloud (Cloud Run, Cloud SQL)
+
+* Render
 
 ---
 
@@ -38,22 +52,32 @@ This project is a secure, web-based password manager designed to help users stor
 
 ```text
 password-manager/
-├── frontend/       
-├── backend/         
-├── docs/            
-├── diagrams/        
-├── .env.example     
+├── frontend/
+├── backend/
+├── docs/
+├── diagrams/
+├── .env.example
 ├── .gitignore
 └── README.md
 ```
 
 ---
 
+## Prerequisites
+
+Before running the project locally, install:
+
+* Node.js and npm
+* Python 3.x
+* Git
+
+---
+
 ## Getting Started
 
-### 1. Clone the repository
+### 1. Clone the Repository
 
-```
+```bash
 git clone <repo-url>
 cd password-manager
 ```
@@ -62,80 +86,138 @@ cd password-manager
 
 ### 2. Backend Setup (Flask)
 
-```
+```bash
 cd backend
-python -m venv venv
-source venv/bin/activate # Mac/Linux
-venv\Scripts\activate # Windows
+
+python -m venv .venv
+
+# Mac/Linux
+source .venv/bin/activate
+
+# Windows
+.venv\Scripts\activate
 
 pip install -r requirements.txt
 ```
 
-Create a `.env` file based on `.env.example`, then run:
+Create a `.env` file in the `backend` directory based on `.env.example`, then start the backend server:
 
-```
+```bash
 flask run
+```
+
+By default, the backend runs on:
+
+```text
+http://localhost:5000
 ```
 
 ---
 
 ### 3. Frontend Setup (React)
 
+Create a `.env` file in the `frontend` directory:
+
+```env
+REACT_APP_API_BASE_URL=http://localhost:5000
 ```
+
+Then install dependencies and start the frontend:
+
+```bash
 cd frontend
+
 npm install
 npm start
+```
+
+By default, the frontend runs on:
+
+```text
+http://localhost:3000
+```
+
+---
+
+## Running Tests
+
+### Frontend Tests
+
+```bash
+cd frontend
+npm test
+```
+
+### Backend Tests
+
+```bash
+cd backend
+python -m pytest routes/tests
 ```
 
 ---
 
 ## Environment Variables
 
-Create a `.env` file in the backend directory using `.env.example` as a template.
+Create `.env` files in the frontend and backend directories using the provided examples and required configuration values.
 
-⚠️ **Do NOT commit your `.env` file to GitHub**
-
----
-
-## Git Workflow
-
-- `main` is the protected branch
-- Do NOT push directly to `main`
-- Create a feature branch for each task:
-  - `feature/...`
-  - `fix/...`
-- Open a Pull Request (PR) for all changes
-- At least one approval is required before merging
-- Use **squash merge**
+⚠️ Do NOT commit `.env` files or sensitive credentials to GitHub.
 
 ---
 
-## Development Guidelines
+## Documentation
 
-- Keep commits small and descriptive
-- Write clear PR descriptions
-- Test your code before merging
-- Coordinate changes that affect multiple components
+Additional technical documentation can be found in the `/docs` directory:
+
+* `docs/frontend-encryption-architecture.md` — Frontend encryption design, authentication flow, and encrypted vault payload architecture
 
 ---
 
 ## Security Notes
 
-- Sensitive credential data is encrypted on the client before transmission
-- Backend does not store plaintext credentials
-- MFA is required for account access
+* Sensitive vault data is encrypted on the client before transmission
+* The backend stores encrypted vault payloads only
+* Vault decryption occurs only within the frontend browser session
+* The user's login password functions as the vault master password
+* Vault passwords are stored only in frontend memory during the active session
+* MFA is required for account access
+* JWT authentication is used for protected API routes
+
+---
+
+## Git Workflow
+
+* `main` is the protected branch
+* Do not push directly to `main`
+* Create a feature branch for each task:
+
+  * `feature/...`
+  * `fix/...`
+  * `docs/...`
+* Open a Pull Request (PR) for all changes
+* At least one approval is required before merging
+* Use squash merge
+
+---
+
+## Development Guidelines
+
+* Keep commits small and descriptive
+* Write clear PR descriptions
+* Test code before merging
+* Coordinate changes that affect multiple components
 
 ---
 
 ## Contributors
 
-- Kat Loeffler
-- Spencer Lan
-- Brandon Mcconathy
-- Roman Depyak
+* Kat Loeffler
+* Spencer Lan
+* Brandon Mcconathy
+* Roman Depyak
 
 ---
 
 ## License
 
-This project is intended for educational purposes and will be open-source.
+This project was developed for educational purposes and is intended to be open source.
