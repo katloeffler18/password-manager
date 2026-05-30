@@ -162,7 +162,7 @@ const LoginPage = () => {
                 type="text"
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
-                placeholder="Enter OTP from email"
+                placeholder="Enter OTP from authenticator app"
                 required
               />
             </div>
